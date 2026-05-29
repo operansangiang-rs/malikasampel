@@ -5,7 +5,6 @@ import os
 from datetime import datetime, timedelta
 from fpdf import FPDF
 
-# Konfigurasi Halaman
 st.set_page_config(page_title="Ops Trafo - Malika", layout="wide")
 
 # --- SISTEM LOGIN ---
@@ -15,21 +14,26 @@ if 'logged_in' not in st.session_state:
 
 if not st.session_state.logged_in:
     st.title("🔐 Login Sistem Operasional")
-    password = st.text_input("Masukkan Password", type="password")
-    if st.button("Login"):
-        if password == "1234":
-            st.session_state.logged_in = True
-            st.session_state.role = "admin"
-            st.rerun()
-        elif password == "2222":
-            st.session_state.logged_in = True
-            st.session_state.role = "user"
-            st.rerun()
-        else:
-            st.error("Password Salah!")
+    
+    # Pilih Role dulu
+    role_choice = st.selectbox("Pilih Akses Masuk:", ["Pilih...", "Admin", "User"])
+    
+    if role_choice != "Pilih...":
+        password = st.text_input(f"Masukkan Password untuk {role_choice}:", type="password")
+        if st.button("Login"):
+            if role_choice == "Admin" and password == "1234":
+                st.session_state.logged_in = True
+                st.session_state.role = "admin"
+                st.rerun()
+            elif role_choice == "User" and password == "2222":
+                st.session_state.logged_in = True
+                st.session_state.role = "user"
+                st.rerun()
+            else:
+                st.error("Password Salah!")
     st.stop()
 
-# --- SIDEBAR & STATUS (Indikator Role) ---
+# --- SIDEBAR & STATUS ---
 st.sidebar.title("👤 Profil Akun")
 st.sidebar.write(f"Status Anda: **{st.session_state.role.upper()}**")
 if st.sidebar.button("Logout"):
@@ -49,7 +53,8 @@ def generate_pdf(row):
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(200, 10, txt="Rincian Jobdesk:", ln=True)
     pdf.set_font("Arial", size=10)
-    pdf.multi_cell(0, 10, txt=pd.DataFrame(json.loads(row['Job'])).to_string(index=False))
+    job_df = pd.DataFrame(json.loads(row['Job']))
+    pdf.multi_cell(0, 10, txt=job_df.to_string(index=False))
     return pdf.output(dest='S').encode('latin-1')
 
 # --- TAMPILAN UTAMA ---
@@ -96,7 +101,6 @@ with tab_list[idx_lihat]:
         df = pd.read_csv("proyek_data.csv")
         df['Tanggal'] = pd.to_datetime(df['Tanggal'])
         df = df.sort_values(by="Tanggal", ascending=False)
-        
         for _, row in df.iterrows():
             with st.expander(f"📌 {row['Nama Proyek']} | 📅 {str(row['Tanggal'].date())}"):
                 st.write(f"**Teknisi:** {row['Teknisi']}")
