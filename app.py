@@ -13,23 +13,64 @@ st.set_page_config(page_title="Ops Trafo - Malika", layout="wide")
 def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
+    
+    # Judul
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, txt="LAPORAN OPERASIONAL TRAFO", ln=True, align='C')
     pdf.ln(10)
+    
+    # Informasi Proyek dengan titik dua sejajar
+    pdf.set_font("Arial", 'B', 12)
+    label_width = 35
+    
+    pdf.cell(label_width, 10, "Nama Proyek", 0, 0)
+    pdf.cell(5, 10, ":", 0, 0)
     pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, txt=f"Nama Proyek : {row['Nama Proyek']}", ln=True)
-    pdf.cell(0, 10, txt=f"Teknisi     : {row['Teknisi']}", ln=True)
-    pdf.cell(0, 10, txt=f"Tanggal     : {row['Tanggal']}", ln=True)
-    pdf.ln(5)
+    pdf.cell(0, 10, str(row['Nama Proyek']), ln=True)
+    
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, txt="Rincian Jobdesk:", ln=True)
-    pdf.set_font("Arial", size=10)
-    pdf.multi_cell(0, 8, txt=pd.DataFrame(json.loads(row['Job'])).to_string(index=False))
-    pdf.ln(5)
+    pdf.cell(label_width, 10, "Teknisi", 0, 0)
+    pdf.cell(5, 10, ":", 0, 0)
+    pdf.set_font("Arial", '', 12)
+    pdf.cell(0, 10, str(row['Teknisi']), ln=True)
+    
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, txt="Kebutuhan Material:", ln=True)
-    pdf.set_font("Arial", size=10)
-    pdf.multi_cell(0, 8, txt=pd.DataFrame(json.loads(row['Material'])).to_string(index=False))
+    pdf.cell(label_width, 10, "Tanggal", 0, 0)
+    pdf.cell(5, 10, ":", 0, 0)
+    pdf.set_font("Arial", '', 12)
+    pdf.cell(0, 10, str(row['Tanggal']), ln=True)
+    
+    pdf.ln(10)
+    
+    # Fungsi pembantu untuk membuat tabel sederhana di PDF
+    def create_table(header, data):
+        pdf.set_font("Arial", 'B', 11)
+        pdf.set_fill_color(200, 200, 200) # Warna abu-abu untuk header
+        for h in header:
+            pdf.cell(60, 10, h, 1, 0, 'C', True)
+        pdf.ln()
+        pdf.set_font("Arial", '', 11)
+        for _, item in data.iterrows():
+            for col in header:
+                pdf.cell(60, 10, str(item[col]), 1)
+            pdf.ln()
+
+    # Rincian Jobdesk
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "Rincian Jobdesk:", ln=True)
+    job_df = pd.DataFrame(json.loads(row['Job']))
+    if not job_df.empty:
+        create_table(job_df.columns.tolist(), job_df)
+    
+    pdf.ln(5)
+    
+    # Kebutuhan Material
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "Kebutuhan Material:", ln=True)
+    mat_df = pd.DataFrame(json.loads(row['Material']))
+    if not mat_df.empty:
+        create_table(mat_df.columns.tolist(), mat_df)
+
     return pdf.output(dest='S').encode('latin-1')
 
 # --- SISTEM LOGIN & SIDEBAR ---
