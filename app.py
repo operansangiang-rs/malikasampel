@@ -96,6 +96,7 @@ with tab_list[idx_lihat]:
     if os.path.exists("proyek_data.csv"):
         df = pd.read_csv("proyek_data.csv")
         df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+        
         with st.expander("🔍 Filter Pencarian"):
             c1, c2 = st.columns(2)
             search_nama = c1.text_input("Cari berdasarkan Nama Proyek:")
@@ -106,12 +107,23 @@ with tab_list[idx_lihat]:
         if search_nama: filtered_df = filtered_df[filtered_df["Nama Proyek"].str.contains(search_nama, case=False)]
         if use_date: filtered_df = filtered_df[filtered_df["Tanggal"].dt.date == search_date]
         
-        for _, row in filtered_df.sort_values(by="Tanggal", ascending=False).iterrows():
+        for idx, row in filtered_df.sort_values(by="Tanggal", ascending=False).iterrows():
             with st.expander(f"📌 {row['Nama Proyek']} | 📅 {str(row['Tanggal'].date())}"):
                 st.write(f"**Teknisi:** {row['Teknisi']}")
                 st.dataframe(pd.DataFrame(json.loads(row['Job'])), use_container_width=True)
                 st.dataframe(pd.DataFrame(json.loads(row['Material'])), use_container_width=True)
-                st.download_button("📄 Download PDF", generate_pdf(row), f"{row['Nama Proyek']}.pdf", "application/pdf")
+                
+                # Baris Tombol Aksi
+                c_a1, c_a2 = st.columns([1, 5])
+                with c_a1:
+                    st.download_button("📄 PDF", generate_pdf(row), f"{row['Nama Proyek']}.pdf", "application/pdf")
+                
+                if st.session_state.role == "admin":
+                    with c_a2:
+                        if st.button("🗑️ Hapus Proyek", key=f"del_{idx}"):
+                            df_new = df.drop(idx)
+                            df_new.to_csv("proyek_data.csv", index=False)
+                            st.rerun()
     else: st.info("Belum ada data.")
 
 # --- TAB NOTIFIKASI ---
