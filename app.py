@@ -6,9 +6,10 @@ import time
 from datetime import datetime, timedelta
 from fpdf import FPDF
 
+# Konfigurasi Halaman
 st.set_page_config(page_title="Ops Trafo - Malika", layout="wide")
 
-# --- FUNGSI PDF ---
+# --- FUNGSI PDF A4 ---
 def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
@@ -31,7 +32,7 @@ def generate_pdf(row):
     pdf.multi_cell(0, 8, txt=pd.DataFrame(json.loads(row['Material'])).to_string(index=False))
     return pdf.output(dest='S').encode('latin-1')
 
-# --- LOGIN ---
+# --- SISTEM LOGIN ---
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if not st.session_state.logged_in:
     st.title("🔐 Login Sistem Operasional")
@@ -45,7 +46,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- SIDEBAR ---
-st.sidebar.title("👤 Profil")
+st.sidebar.title("👤 Profil Akun")
 st.sidebar.write(f"Status: **{st.session_state.role.upper()}**")
 if st.sidebar.button("Logout"): st.session_state.logged_in = False; st.rerun()
 
@@ -63,7 +64,6 @@ if st.session_state.role == "admin":
         dj = st.data_editor(pd.DataFrame(columns=["Deskripsi"]), num_rows="dynamic")
         dm = st.data_editor(pd.DataFrame(columns=["Material", "Qty", "Satuan"]), num_rows="dynamic")
         if st.button("Simpan Data"):
-            # Tambahkan 'ID' unik berdasarkan waktu
             df_new = pd.DataFrame([{"ID": time.time(), "Nama Proyek": n, "Teknisi": t, "Tanggal": str(tg), 
                                     "Job": json.dumps(dj.to_dict()), "Material": json.dumps(dm.to_dict())}])
             df_new.to_csv("proyek_data.csv", mode='a', header=not os.path.exists("proyek_data.csv"), index=False)
@@ -74,7 +74,10 @@ idx = 1 if st.session_state.role == "admin" else 0
 with tab_list[idx]:
     if os.path.exists("proyek_data.csv"):
         df = pd.read_csv("proyek_data.csv")
+        if 'ID' not in df.columns: df['ID'] = range(len(df)); df.to_csv("proyek_data.csv", index=False); st.rerun()
+        
         for i, row in df.iterrows():
+            r_id = row['ID']
             with st.expander(f"📌 {row['Nama Proyek']} | 📅 {row['Tanggal']}"):
                 st.write(f"**Teknisi:** {row['Teknisi']}")
                 st.dataframe(pd.DataFrame(json.loads(row['Job'])), use_container_width=True)
@@ -82,17 +85,21 @@ with tab_list[idx]:
                 
                 if st.session_state.role == "admin":
                     col1, col2, col3 = st.columns([1, 1, 4])
-                    # Tombol Aksi
-                    col1.download_button("📄 PDF", generate_pdf(row), f"{row['Nama Proyek']}.pdf")
-                    if col2.button("🗑️ Hapus", key=f"del_{row['ID']}"): 
-                        df.drop(i).to_csv("proyek_data.csv", index=False); st.rerun()
-                    
-                    # Tombol Edit (Memunculkan Form)
-                    if st.button("✏️ Edit", key=f"edit_btn_{row['ID']}"): st.session_state[f"show_edit_{row['ID']}"] = True
-                    if st.session_state.get(f"show_edit_{row['ID']}", False):
-                        with st.form(key=f"form_{row['ID']}"):
-                            new_n = st.text_input("Nama Baru:", value=row['Nama Proyek'])
-                            if st.form_submit_button("Simpan Perubahan"):
-                                df.at[i, 'Nama Proyek'] = new_n
-                                df.to_csv("proyek_data.csv", index=False)
-                                st.session_state[f"show_edit_{row['ID']}"] = False; st.rerun()
+                    col1.download_button("📄 PDF A4", generate_pdf(row), f"{row['Nama Proyek']}.pdf")
+                    if col2.button("🗑️ Hapus", key=f"del_{r_id}"): df.drop(i).to_csv("proyek_data.csv", index=False); st.rerun()
+                    if st.button("✏️ Edit", key=f"edit_{r_id}"): st.session_state[f"show_{r_id}"] = True
+                    if st.session_state.get(f"show_{r_id}", False):
+                        with st.form(key=f"f_{r_id}"):
+                            new_n = st.text_input("Edit Nama Proyek:", value=row['Nama Proyek'])
+                            if st.form_submit_button("Simpan"):
+                                df.at[i, 'Nama Proyek'] = new_n; df.to_csv("proyek_data.csv", index=False)
+                                st.session_state[f"show_{r_id}"] = False; st.rerun()
+    else: st.info("Belum ada data.")
+
+# --- TAB NOTIFIKASI ---
+with tab_list[-1]:
+    if os.path.exists("proyek_data.csv"):
+        df = pd.read_csv("proyek_data.csv")
+        df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+        up = df[(df['Tanggal'] >= pd.Timestamp(datetime.now().date())) & (df['Tanggal'] <= pd.Timestamp(datetime.now().date()) + timedelta(days=7))]
+        for _, row in up.iterrows(): st.info(f"📅 {row['Tanggal'].date()}: {row['Nama Proyek']} (Teknisi: {row['Teknisi']})")
