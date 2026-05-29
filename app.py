@@ -29,9 +29,9 @@ if not st.session_state.logged_in:
             st.error("Password Salah!")
     st.stop()
 
-# --- SIDEBAR & STATUS ---
+# --- SIDEBAR & STATUS (Indikator Role) ---
 st.sidebar.title("👤 Profil Akun")
-st.sidebar.write(f"Status: **{st.session_state.role.upper()}**")
+st.sidebar.write(f"Status Anda: **{st.session_state.role.upper()}**")
 if st.sidebar.button("Logout"):
     st.session_state.logged_in = False
     st.rerun()
