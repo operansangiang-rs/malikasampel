@@ -19,40 +19,39 @@ def generate_pdf(row):
     pdf.cell(0, 10, txt="LAPORAN OPERASIONAL TRAFO", ln=True, align='C')
     pdf.ln(10)
     
-    # Informasi Proyek dengan titik dua sejajar
+    # Informasi Proyek
     pdf.set_font("Arial", 'B', 12)
     label_width = 35
     
-    pdf.cell(label_width, 10, "Nama Proyek", 0, 0)
-    pdf.cell(5, 10, ":", 0, 0)
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, str(row['Nama Proyek']), ln=True)
+    for label, val in [("Nama Proyek", row['Nama Proyek']), ("Teknisi", row['Teknisi']), ("Tanggal", row['Tanggal'])]:
+        pdf.cell(label_width, 10, label, 0, 0)
+        pdf.cell(5, 10, ":", 0, 0)
+        pdf.set_font("Arial", '', 12)
+        pdf.cell(0, 10, str(val), ln=True)
+        pdf.set_font("Arial", 'B', 12)
     
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(label_width, 10, "Teknisi", 0, 0)
-    pdf.cell(5, 10, ":", 0, 0)
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, str(row['Teknisi']), ln=True)
+    pdf.ln(5)
     
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(label_width, 10, "Tanggal", 0, 0)
-    pdf.cell(5, 10, ":", 0, 0)
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, str(row['Tanggal']), ln=True)
-    
-    pdf.ln(10)
-    
-    # Fungsi pembantu untuk membuat tabel sederhana di PDF
+    # Fungsi pembantu dengan penanganan nilai kosong
     def create_table(header, data):
         pdf.set_font("Arial", 'B', 11)
-        pdf.set_fill_color(200, 200, 200) # Warna abu-abu untuk header
+        pdf.set_fill_color(230, 230, 230)
+        
+        # Hitung lebar kolom otomatis
+        col_width = 190 / len(header)
+        
         for h in header:
-            pdf.cell(60, 10, h, 1, 0, 'C', True)
+            pdf.cell(col_width, 10, h, 1, 0, 'C', True)
         pdf.ln()
+        
         pdf.set_font("Arial", '', 11)
         for _, item in data.iterrows():
             for col in header:
-                pdf.cell(60, 10, str(item[col]), 1)
+                # Ganti nan/None menjadi string kosong
+                val = item[col]
+                if pd.isna(val) or val is None:
+                    val = ""
+                pdf.cell(col_width, 10, str(val), 1)
             pdf.ln()
 
     # Rincian Jobdesk
