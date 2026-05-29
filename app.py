@@ -9,7 +9,7 @@ from fpdf import FPDF
 # Konfigurasi Halaman
 st.set_page_config(page_title="Ops Trafo - Malika", layout="wide")
 
-# --- FUNGSI PDF A4 ---
+# --- FUNGSI PDF ---
 def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
@@ -61,21 +61,20 @@ if st.session_state.role == "admin":
         st.header("Tambah Proyek")
         col1, col2 = st.columns(2)
         n = col1.text_input("Nama Proyek"); t = col2.text_input("Teknisi"); tg = st.date_input("Tanggal")
-        dj = st.data_editor(pd.DataFrame(columns=["Deskripsi"]), num_rows="dynamic")
+        dj = st.data_editor(pd.DataFrame(columns=["Deskripsi Pekerjaan"]), num_rows="dynamic")
         dm = st.data_editor(pd.DataFrame(columns=["Material", "Qty", "Satuan"]), num_rows="dynamic")
         if st.button("Simpan Data"):
             df_new = pd.DataFrame([{"ID": time.time(), "Nama Proyek": n, "Teknisi": t, "Tanggal": str(tg), 
-                                    "Job": json.dumps(dj.to_dict()), "Material": json.dumps(dm.to_dict())}])
+                                    "Job": json.dumps(dj.to_dict(orient='records')), 
+                                    "Material": json.dumps(dm.to_dict(orient='records'))}])
             df_new.to_csv("proyek_data.csv", mode='a', header=not os.path.exists("proyek_data.csv"), index=False)
-            st.success("Tersimpan!")
+            st.success("✅ Data berhasil disimpan!")
 
 # --- TAB CARI & LIHAT ---
 idx = 1 if st.session_state.role == "admin" else 0
 with tab_list[idx]:
     if os.path.exists("proyek_data.csv"):
         df = pd.read_csv("proyek_data.csv")
-        if 'ID' not in df.columns: df['ID'] = range(len(df)); df.to_csv("proyek_data.csv", index=False); st.rerun()
-        
         for i, row in df.iterrows():
             r_id = row['ID']
             with st.expander(f"📌 {row['Nama Proyek']} | 📅 {row['Tanggal']}"):
@@ -87,18 +86,20 @@ with tab_list[idx]:
                     c1, c2, c3 = st.columns([1, 1, 4])
                     c1.download_button("📄 PDF A4", generate_pdf(row), f"{row['Nama Proyek']}.pdf")
                     if c2.button("🗑️ Hapus", key=f"del_{r_id}"): df.drop(i).to_csv("proyek_data.csv", index=False); st.rerun()
-                    
                     if st.button("✏️ Edit", key=f"edit_{r_id}"): st.session_state[f"show_{r_id}"] = True
+                    
                     if st.session_state.get(f"show_{r_id}", False):
                         with st.form(key=f"f_{r_id}"):
                             n_n = st.text_input("Edit Nama Proyek:", value=row['Nama Proyek'])
                             n_t = st.text_input("Edit Teknisi:", value=row['Teknisi'])
                             n_j = st.data_editor(pd.DataFrame(json.loads(row['Job'])), num_rows="dynamic")
                             n_m = st.data_editor(pd.DataFrame(json.loads(row['Material'])), num_rows="dynamic")
-                            if st.form_submit_button("Simpan Semua Perubahan"):
+                            if st.form_submit_button("Simpan Perubahan"):
                                 df.at[i, 'Nama Proyek'] = n_n; df.at[i, 'Teknisi'] = n_t
-                                df.at[i, 'Job'] = json.dumps(n_j.to_dict()); df.at[i, 'Material'] = json.dumps(n_m.to_dict())
+                                df.at[i, 'Job'] = json.dumps(n_j.to_dict(orient='records'))
+                                df.at[i, 'Material'] = json.dumps(n_m.to_dict(orient='records'))
                                 df.to_csv("proyek_data.csv", index=False)
+                                st.success("✅ Perubahan tersimpan!")
                                 st.session_state[f"show_{r_id}"] = False; st.rerun()
     else: st.info("Belum ada data.")
 
@@ -108,4 +109,4 @@ with tab_list[-1]:
         df = pd.read_csv("proyek_data.csv")
         df['Tanggal'] = pd.to_datetime(df['Tanggal'])
         up = df[(df['Tanggal'] >= pd.Timestamp(datetime.now().date())) & (df['Tanggal'] <= pd.Timestamp(datetime.now().date()) + timedelta(days=7))]
-        for _, row in up.iterrows(): st.info(f"📅 {row['Tanggal'].date()}: {row['Nama Proyek']} (Teknisi: {row['Teknisi']})")
+        for _, row in up.iterrows(): st.info(f"📅 {row['Tanggal'].date()}: {row['Nama Proyek']}")
