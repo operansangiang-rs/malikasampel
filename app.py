@@ -11,13 +11,14 @@ from fpdf import FPDF
 # Konfigurasi Halaman
 st.set_page_config(page_title="Ops Trafo - Malika", layout="wide")
 
-# --- FUNGSI UTAMA ---
+# --- FUNGSI PENGURUTAN PERMANEN ---
 def save_and_sort_df(df):
-    """Fungsi pembantu untuk menyimpan data dan selalu mengurutkan berdasarkan Tanggal Proyek"""
+    """Menyimpan DataFrame ke CSV dengan urutan Tanggal Proyek (terbaru/mendatang di atas)"""
     df['Tanggal'] = pd.to_datetime(df['Tanggal'])
     df = df.sort_values(by="Tanggal", ascending=False)
     df.to_csv("proyek_data.csv", index=False)
 
+# --- FUNGSI NOTIFIKASI TELEGRAM ---
 def send_telegram_msg(message):
     token = "ISI_TOKEN_BOT_ANDA" 
     chat_id = "ISI_CHAT_ID_ANDA" 
@@ -25,6 +26,7 @@ def send_telegram_msg(message):
     try: requests.get(url)
     except: pass
 
+# --- FUNGSI PDF A4 RAPI ---
 def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
@@ -132,11 +134,12 @@ with tab_list[idx]:
             search_nama = c1.text_input("Cari Nama Proyek:")
             use_date = c2.checkbox("Gunakan Filter Tanggal"); search_date = c2.date_input("Pilih Tanggal:") if use_date else None
         
-        # Urutan berdasarkan TANGGAL PROYEK (ascending=False -> terbaru di atas)
+        # Urutkan selalu berdasarkan tanggal proyek (terbaru di atas)
         f_df = df.sort_values(by="Tanggal", ascending=False)
         if search_nama: f_df = f_df[f_df["Nama Proyek"].str.contains(search_nama, case=False, na=False)]
         if use_date: f_df = f_df[f_df["Tanggal"].dt.date == search_date]
         
+        # Tampilkan 10 data jika tidak sedang mencari
         display_df = f_df.head(10) if not search_nama and not use_date else f_df
         if not search_nama and not use_date: st.info("Menampilkan 10 data terbaru.")
 
@@ -148,7 +151,8 @@ with tab_list[idx]:
                 if st.session_state.role == "admin":
                     c1, c2, c3 = st.columns([1, 1, 4])
                     c1.download_button("📄 PDF A4", generate_pdf(row), f"{row['Nama Proyek']}.pdf")
-                    if c2.button("🗑️ Hapus", key=f"del_{row['ID']}"): df = df.drop(i); save_and_sort_df(df); st.rerun()
+                    if c2.button("🗑️ Hapus", key=f"del_{row['ID']}"): 
+                        df = df.drop(i); save_and_sort_df(df); st.rerun()
                     if st.button("✏️ Edit", key=f"edit_{row['ID']}"): st.session_state[f"show_{row['ID']}"] = True
                     if st.session_state.get(f"show_{row['ID']}", False):
                         with st.form(key=f"f_{row['ID']}"):
