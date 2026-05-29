@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import os
 import time
+import io
 from datetime import datetime, timedelta
 from fpdf import FPDF
 
@@ -99,6 +100,18 @@ with tab_list[idx]:
         df = pd.read_csv("proyek_data.csv")
         df['Tanggal'] = pd.to_datetime(df['Tanggal'])
         
+        # FITUR EXPORT EXCEL (KHUSUS ADMIN)
+        if st.session_state.role == "admin":
+            with st.expander("📊 Export Laporan Bulanan ke Excel"):
+                c_m, c_y = st.columns(2)
+                pilih_bulan = c_m.selectbox("Pilih Bulan:", range(1, 13), format_func=lambda x: datetime(2026, x, 1).strftime('%B'))
+                pilih_tahun = c_y.selectbox("Pilih Tahun:", [2025, 2026, 2027])
+                df_b = df[(df['Tanggal'].dt.month == pilih_bulan) & (df['Tanggal'].dt.year == pilih_tahun)]
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer: df_b.to_excel(writer, index=False)
+                st.download_button("📥 Download Excel", output.getvalue(), f"Laporan_{pilih_bulan}_{pilih_tahun}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # FILTER PENCARIAN
         with st.expander("🔍 Filter Pencarian"):
             c1, c2 = st.columns(2)
             search_nama = c1.text_input("Cari Nama Proyek:")
