@@ -13,8 +13,8 @@ st.set_page_config(page_title="Ops Trafo - Malika", layout="wide")
 
 # --- FUNGSI NOTIFIKASI TELEGRAM ---
 def send_telegram_msg(message):
-    token = "ISI_TOKEN_BOT_ANDA" # Ganti dengan token bot Anda
-    chat_id = "ISI_CHAT_ID_ANDA" # Ganti dengan chat ID Anda
+    token = "ISI_TOKEN_BOT_ANDA" 
+    chat_id = "ISI_CHAT_ID_ANDA" 
     url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
     try: requests.get(url)
     except: pass
@@ -117,8 +117,18 @@ with tab_list[idx]:
                     df_export.to_excel(writer, index=False, sheet_name='Laporan')
                     workbook = writer.book
                     worksheet = writer.sheets['Laporan']
-                    wrap_format = workbook.add_format({'text_wrap': True, 'valign': 'top'})
+                    
+                    # Style Excel
+                    wrap_format = workbook.add_format({'text_wrap': True, 'valign': 'top', 'border': 1})
+                    header_format = workbook.add_format({'bold': True, 'bg_color': '#D3D3D3', 'border': 1})
+                    
+                    worksheet.set_column('A:A', 15, workbook.add_format({'border': 1}))
+                    worksheet.set_column('B:B', 30, workbook.add_format({'border': 1}))
                     worksheet.set_column('C:C', 30, wrap_format)
+                    
+                    for col_num, value in enumerate(df_export.columns.values):
+                        worksheet.write(0, col_num, value, header_format)
+                        
                 st.download_button("📥 Download Excel Ringkas", output.getvalue(), f"Laporan_{pilih_bulan}_{pilih_tahun}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         with st.expander("🔍 Filter Pencarian"):
