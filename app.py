@@ -84,15 +84,21 @@ with tab_list[idx]:
                 st.dataframe(pd.DataFrame(json.loads(row['Material'])), use_container_width=True)
                 
                 if st.session_state.role == "admin":
-                    col1, col2, col3 = st.columns([1, 1, 4])
-                    col1.download_button("📄 PDF A4", generate_pdf(row), f"{row['Nama Proyek']}.pdf")
-                    if col2.button("🗑️ Hapus", key=f"del_{r_id}"): df.drop(i).to_csv("proyek_data.csv", index=False); st.rerun()
+                    c1, c2, c3 = st.columns([1, 1, 4])
+                    c1.download_button("📄 PDF A4", generate_pdf(row), f"{row['Nama Proyek']}.pdf")
+                    if c2.button("🗑️ Hapus", key=f"del_{r_id}"): df.drop(i).to_csv("proyek_data.csv", index=False); st.rerun()
+                    
                     if st.button("✏️ Edit", key=f"edit_{r_id}"): st.session_state[f"show_{r_id}"] = True
                     if st.session_state.get(f"show_{r_id}", False):
                         with st.form(key=f"f_{r_id}"):
-                            new_n = st.text_input("Edit Nama Proyek:", value=row['Nama Proyek'])
-                            if st.form_submit_button("Simpan"):
-                                df.at[i, 'Nama Proyek'] = new_n; df.to_csv("proyek_data.csv", index=False)
+                            n_n = st.text_input("Edit Nama Proyek:", value=row['Nama Proyek'])
+                            n_t = st.text_input("Edit Teknisi:", value=row['Teknisi'])
+                            n_j = st.data_editor(pd.DataFrame(json.loads(row['Job'])), num_rows="dynamic")
+                            n_m = st.data_editor(pd.DataFrame(json.loads(row['Material'])), num_rows="dynamic")
+                            if st.form_submit_button("Simpan Semua Perubahan"):
+                                df.at[i, 'Nama Proyek'] = n_n; df.at[i, 'Teknisi'] = n_t
+                                df.at[i, 'Job'] = json.dumps(n_j.to_dict()); df.at[i, 'Material'] = json.dumps(n_m.to_dict())
+                                df.to_csv("proyek_data.csv", index=False)
                                 st.session_state[f"show_{r_id}"] = False; st.rerun()
     else: st.info("Belum ada data.")
 
